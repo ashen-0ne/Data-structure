@@ -2,6 +2,7 @@
 #define AVL_TREE_
 
 #include <iostream>
+#include <queue>
 
 template<class K,class V>
 class AVL_tree_node
@@ -107,12 +108,12 @@ public:
                 {
                     if(cur->m_bf == 1)
                     {
-                        std::cout<<"key:"<<key<<" L"<<std::endl;
+                        // std::cout<<"key:"<<key<<" L"<<std::endl;
                         Rotate_L(parent);
                     }
                     else
                     {
-                        std::cout<<"key:"<<key<<" RL"<<std::endl;
+                        // std::cout<<"key:"<<key<<" RL"<<std::endl;
                         Rotate_RL(parent);
                     }
                 }
@@ -120,12 +121,12 @@ public:
                 {
                     if(cur->m_bf == -1)
                     {
-                        std::cout<<"key:"<<key<<" R"<<std::endl;
+                        // std::cout<<"key:"<<key<<" R"<<std::endl;
                         Rotate_R(parent);
                     }
                     else
                     {
-                        std::cout<<"key:"<<key<<" LR"<<std::endl;
+                        // std::cout<<"key:"<<key<<" LR"<<std::endl;
                         Rotate_LR(parent);
                     }
                 }
@@ -137,47 +138,79 @@ public:
     void Rotate_R(AVL_tree_node<Key,Value>*& node)
     {
         AVL_tree_node<Key,Value> * parent = node->m_parent_node;
-        AVL_tree_node<Key,Value> * temp_node = node;
-        AVL_tree_node<Key,Value> * temp_left_node = node->m_left_node;
+        AVL_tree_node<Key,Value> * sub_L = node->m_left_node;
+        AVL_tree_node<Key,Value> * sub_LR = sub_L->m_right_node;
 
         node->m_bf = 0;
-        temp_left_node->m_bf = 0;
+        sub_L->m_bf = 0;
 
-        temp_node->m_parent_node = temp_left_node;
-        temp_node->m_left_node = temp_left_node->m_right_node;
+        sub_L->m_parent_node = parent;
+        sub_L->m_right_node = node;
 
-        temp_left_node->m_parent_node = parent;
-        temp_left_node->m_right_node = temp_node;
+        if(sub_LR)
+        {
+            sub_LR->m_parent_node = node;
+        }
+
+        node->m_parent_node = sub_L;
+        node->m_left_node = sub_LR;
 
         if(parent == nullptr)
         {
-            m_root_node = temp_left_node;
+            m_root_node = sub_L;
+        }
+        else
+        {
+            if(parent->m_left_node == node)
+            {
+                parent->m_left_node = sub_L;
+            }
+            else
+            {
+                parent->m_right_node = sub_L;
+            }
         }
 
-        node = temp_left_node;
+        node = sub_L;
     }
 
     void Rotate_L(AVL_tree_node<Key,Value>*& node)
     {
         AVL_tree_node<Key,Value> * parent = node->m_parent_node;
-        AVL_tree_node<Key,Value> * temp_node = node;
-        AVL_tree_node<Key,Value> * temp_right_node = node->m_right_node;
-        
-        node->m_bf = 0;
-        temp_right_node->m_bf = 0;
-        
-        temp_node->m_parent_node = temp_right_node;
-        temp_node->m_right_node = temp_right_node->m_left_node;
+        AVL_tree_node<Key,Value> * sub_R = node->m_right_node;
+        AVL_tree_node<Key,Value> * sub_RL = sub_R->m_left_node;
 
-        temp_right_node->m_parent_node = parent;
-        temp_right_node->m_left_node = node;
+        node->m_bf = 0;
+        sub_R->m_bf = 0;
+        
+        sub_R->m_parent_node = parent;
+        sub_R->m_left_node = node;
+
+        if(sub_RL)
+        {
+            sub_RL->m_parent_node = node;
+        }
+
+        node->m_parent_node = sub_R;
+        node->m_right_node = sub_RL;
 
         if(parent == nullptr)
         {
-            m_root_node = temp_right_node;
+            m_root_node = sub_R;
+        }
+        else
+        {
+            if(parent->m_left_node == node)
+            {
+                parent->m_left_node = sub_R;
+            }
+            else
+            {
+                parent->m_right_node = sub_R;
+            }
         }
 
-        node = temp_right_node;
+        node = sub_R;
     }
 
     void Rotate_RL(AVL_tree_node<Key,Value>*& node)
@@ -249,6 +282,41 @@ public:
         print_node_(node->m_left_node);
         std::cout<< node->m_key << " bf = " << node->m_bf  <<std::endl;
         print_node_(node->m_right_node);
+    }
+
+    void level_print()
+    {
+        std::queue<AVL_tree_node<Key,Value>*> que;
+        que.push(m_root_node);
+        while(que.size() > 0)
+        {
+            level_print_(que);
+        }
+    }
+
+    void level_print_(std::queue<AVL_tree_node<Key,Value>*>& que)
+    {
+        if(que.size() == 0)
+        {
+            return;
+        }
+        int size = que.size();
+        for(int i = 0;i < size;++i)
+        {
+            AVL_tree_node<Key,Value>* temp = que.front();
+            que.pop();
+            std::cout<<temp->m_key<< " ";
+            if(temp->m_left_node != nullptr)
+            {
+                que.push(temp->m_left_node);
+            }
+            if(temp->m_right_node != nullptr)
+            {
+                que.push(temp->m_right_node);
+            }
+        }
+        std::cout<<std::endl;
+        return;
     }
 
 private:
