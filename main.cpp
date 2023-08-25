@@ -1,4 +1,5 @@
 #include "AVL_tree.h"
+#include "RB_tree.h"
 
 int main(int argc,char ** argv)
 {
@@ -10,6 +11,13 @@ int main(int argc,char ** argv)
         tree.insert(rand()%1000000,std::to_string(rand()%1000000));
     }
 
+    RB_tree<int,int> rb_tree;
+    for(int i = 20;i < 10000;i += 10)
+    {
+        rb_tree.insert(rand()%1000000,rand()%1000000);
+    }
+
+    rb_tree.print_node();
     // for(int i = 50000;i >= 10000;i -= 10)
     // {
     //     tree.insert(i,std::to_string(i));
@@ -36,7 +44,7 @@ int main(int argc,char ** argv)
     // tree.insert(40,"40");
     // tree.print_node();
     // tree.insert(50,"50");
-    tree.print_node();
+    // tree.print_node();
     // tree.insert(60,"60");
 
 

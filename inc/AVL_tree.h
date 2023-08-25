@@ -34,7 +34,22 @@ public:
     AVL_tree(AVL_tree&&) = default;
     ~AVL_tree() = default;
 
-    bool insert(Key key,Value value)
+    bool insert(Key key,Value value);
+    void Rotate_R(AVL_tree_node<Key,Value>*& node);
+    void Rotate_L(AVL_tree_node<Key,Value>*& node);
+    void Rotate_RL(AVL_tree_node<Key,Value>*& node);
+    void Rotate_LR(AVL_tree_node<Key,Value>*& node);
+    void print_node();
+    void print_node_(AVL_tree_node<Key,Value>* node);
+    void level_print();
+    void level_print_(std::queue<AVL_tree_node<Key,Value>*>& que);
+
+private:
+    AVL_tree_node<Key,Value>* m_root_node{nullptr};
+};
+
+template<class Key,class Value>
+bool AVL_tree<Key,Value>::insert(Key key,Value value)
     {
         if(m_root_node == nullptr)
         {
@@ -135,192 +150,196 @@ public:
         }
     }
 
-    void Rotate_R(AVL_tree_node<Key,Value>*& node)
+template<class Key,class Value>
+void AVL_tree<Key,Value>::Rotate_R(AVL_tree_node<Key,Value>*& node)
+{
+    AVL_tree_node<Key,Value> * parent = node->m_parent_node;
+    AVL_tree_node<Key,Value> * sub_L = node->m_left_node;
+    AVL_tree_node<Key,Value> * sub_LR = sub_L->m_right_node;
+
+    node->m_bf = 0;
+    sub_L->m_bf = 0;
+
+    sub_L->m_parent_node = parent;
+    sub_L->m_right_node = node;
+
+    if(sub_LR)
     {
-        AVL_tree_node<Key,Value> * parent = node->m_parent_node;
-        AVL_tree_node<Key,Value> * sub_L = node->m_left_node;
-        AVL_tree_node<Key,Value> * sub_LR = sub_L->m_right_node;
+        sub_LR->m_parent_node = node;
+    }
 
-        node->m_bf = 0;
-        sub_L->m_bf = 0;
+    node->m_parent_node = sub_L;
+    node->m_left_node = sub_LR;
 
-        sub_L->m_parent_node = parent;
-        sub_L->m_right_node = node;
-
-        if(sub_LR)
+    if(parent == nullptr)
+    {
+        m_root_node = sub_L;
+    }
+    else
+    {
+        if(parent->m_left_node == node)
         {
-            sub_LR->m_parent_node = node;
-        }
-
-        node->m_parent_node = sub_L;
-        node->m_left_node = sub_LR;
-
-        if(parent == nullptr)
-        {
-            m_root_node = sub_L;
+            parent->m_left_node = sub_L;
         }
         else
         {
-            if(parent->m_left_node == node)
-            {
-                parent->m_left_node = sub_L;
-            }
-            else
-            {
-                parent->m_right_node = sub_L;
-            }
+            parent->m_right_node = sub_L;
         }
-
-        node = sub_L;
     }
 
-    void Rotate_L(AVL_tree_node<Key,Value>*& node)
+    // node = sub_L;
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::Rotate_L(AVL_tree_node<Key,Value>*& node)
+{
+    AVL_tree_node<Key,Value> * parent = node->m_parent_node;
+    AVL_tree_node<Key,Value> * sub_R = node->m_right_node;
+    AVL_tree_node<Key,Value> * sub_RL = sub_R->m_left_node;
+
+    node->m_bf = 0;
+    sub_R->m_bf = 0;
+    
+    sub_R->m_parent_node = parent;
+    sub_R->m_left_node = node;
+
+    if(sub_RL)
     {
-        AVL_tree_node<Key,Value> * parent = node->m_parent_node;
-        AVL_tree_node<Key,Value> * sub_R = node->m_right_node;
-        AVL_tree_node<Key,Value> * sub_RL = sub_R->m_left_node;
+        sub_RL->m_parent_node = node;
+    }
 
-        node->m_bf = 0;
-        sub_R->m_bf = 0;
-        
-        sub_R->m_parent_node = parent;
-        sub_R->m_left_node = node;
+    node->m_parent_node = sub_R;
+    node->m_right_node = sub_RL;
 
-        if(sub_RL)
+    if(parent == nullptr)
+    {
+        m_root_node = sub_R;
+    }
+    else
+    {
+        if(parent->m_left_node == node)
         {
-            sub_RL->m_parent_node = node;
-        }
-
-        node->m_parent_node = sub_R;
-        node->m_right_node = sub_RL;
-
-        if(parent == nullptr)
-        {
-            m_root_node = sub_R;
+            parent->m_left_node = sub_R;
         }
         else
         {
-            if(parent->m_left_node == node)
-            {
-                parent->m_left_node = sub_R;
-            }
-            else
-            {
-                parent->m_right_node = sub_R;
-            }
-        }
-
-        node = sub_R;
-    }
-
-    void Rotate_RL(AVL_tree_node<Key,Value>*& node)
-    {
-        AVL_tree_node<Key,Value> * parent = node;
-        AVL_tree_node<Key,Value> * node_right = node->m_right_node;
-        AVL_tree_node<Key,Value> * node_right_left = node_right->m_left_node;
-        int bf = node_right_left->m_bf;
-
-        Rotate_R(node->m_right_node);
-        Rotate_L(node);
-
-        if(bf == -1)
-        {
-            parent->m_bf = 0;
-            node_right->m_bf = 1;
-        }
-        else if(bf == 1)
-        {
-            parent->m_bf = -1;
-            node_right->m_bf = 0;
-        }
-        else
-        {
-            parent->m_bf = 0;
-            node_right->m_bf = 0;
+            parent->m_right_node = sub_R;
         }
     }
 
-    void Rotate_LR(AVL_tree_node<Key,Value>*& node)
+    // node = sub_R;
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::Rotate_RL(AVL_tree_node<Key,Value>*& node)
+{
+    AVL_tree_node<Key,Value> * parent = node;
+    AVL_tree_node<Key,Value> * node_right = node->m_right_node;
+    AVL_tree_node<Key,Value> * node_right_left = node_right->m_left_node;
+    int bf = node_right_left->m_bf;
+
+    Rotate_R(node->m_right_node);
+    Rotate_L(node);
+
+    if(bf == -1)
     {
-        AVL_tree_node<Key,Value> * parent = node;
-        AVL_tree_node<Key,Value> * node_left = node->m_left_node;
-        AVL_tree_node<Key,Value> * node_left_right = node_left->m_right_node;
-        int bf = node_left_right->m_bf;
-
-        Rotate_L(node->m_left_node);
-        Rotate_R(node);
-
-        if(bf == -1)
-        {
-            parent->m_bf = 1;
-            node_left->m_bf = 0;
-        }
-        else if(bf == 1)
-        {
-            parent->m_bf = 0;
-            node_left->m_bf = -1;
-        }
-        else
-        {
-            parent->m_bf = 0;
-            node_left->m_bf = 0;
-        }
+        parent->m_bf = 0;
+        node_right->m_bf = 1;
     }
-
-    void print_node()
+    else if(bf == 1)
     {
-        print_node_(m_root_node);
-        std::cout<<std::endl;
+        parent->m_bf = -1;
+        node_right->m_bf = 0;
     }
-
-    void print_node_(AVL_tree_node<Key,Value>* node)
+    else
     {
-        if(node == nullptr)
-        {
-            return;
-        }
-        print_node_(node->m_left_node);
-        std::cout<< node->m_key << " bf = " << node->m_bf  <<std::endl;
-        print_node_(node->m_right_node);
+        parent->m_bf = 0;
+        node_right->m_bf = 0;
     }
+}
 
-    void level_print()
+template<class Key,class Value>
+void AVL_tree<Key,Value>::Rotate_LR(AVL_tree_node<Key,Value>*& node)
+{
+    AVL_tree_node<Key,Value> * parent = node;
+    AVL_tree_node<Key,Value> * node_left = node->m_left_node;
+    AVL_tree_node<Key,Value> * node_left_right = node_left->m_right_node;
+    int bf = node_left_right->m_bf;
+
+    Rotate_L(node->m_left_node);
+    Rotate_R(node);
+
+    if(bf == -1)
     {
-        std::queue<AVL_tree_node<Key,Value>*> que;
-        que.push(m_root_node);
-        while(que.size() > 0)
-        {
-            level_print_(que);
-        }
+        parent->m_bf = 1;
+        node_left->m_bf = 0;
     }
-
-    void level_print_(std::queue<AVL_tree_node<Key,Value>*>& que)
+    else if(bf == 1)
     {
-        if(que.size() == 0)
-        {
-            return;
-        }
-        int size = que.size();
-        for(int i = 0;i < size;++i)
-        {
-            AVL_tree_node<Key,Value>* temp = que.front();
-            que.pop();
-            std::cout<<temp->m_key<< " ";
-            if(temp->m_left_node != nullptr)
-            {
-                que.push(temp->m_left_node);
-            }
-            if(temp->m_right_node != nullptr)
-            {
-                que.push(temp->m_right_node);
-            }
-        }
-        std::cout<<std::endl;
+        parent->m_bf = 0;
+        node_left->m_bf = -1;
+    }
+    else
+    {
+        parent->m_bf = 0;
+        node_left->m_bf = 0;
+    }
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::print_node()
+{
+    print_node_(m_root_node);
+    std::cout<<std::endl;
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::print_node_(AVL_tree_node<Key,Value>* node)
+{
+    if(node == nullptr)
+    {
         return;
     }
+    print_node_(node->m_left_node);
+    std::cout<< node->m_key << " bf = " << node->m_bf  <<std::endl;
+    print_node_(node->m_right_node);
+}
 
-private:
-    AVL_tree_node<Key,Value>* m_root_node{nullptr};
-};
+template<class Key,class Value>
+void AVL_tree<Key,Value>::level_print()
+{
+    std::queue<AVL_tree_node<Key,Value>*> que;
+    que.push(m_root_node);
+    while(que.size() > 0)
+    {
+        level_print_(que);
+    }
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::level_print_(std::queue<AVL_tree_node<Key,Value>*>& que)
+{
+    if(que.size() == 0)
+    {
+        return;
+    }
+    int size = que.size();
+    for(int i = 0;i < size;++i)
+    {
+        AVL_tree_node<Key,Value>* temp = que.front();
+        que.pop();
+        std::cout<<temp->m_key<< " ";
+        if(temp->m_left_node != nullptr)
+        {
+            que.push(temp->m_left_node);
+        }
+        if(temp->m_right_node != nullptr)
+        {
+            que.push(temp->m_right_node);
+        }
+    }
+    std::cout<<std::endl;
+    return;
+}
 
 #endif
