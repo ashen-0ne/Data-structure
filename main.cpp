@@ -1,5 +1,6 @@
 #include "AVL_tree.h"
 #include "RB_tree.h"
+#include <map>
 
 int main(int argc,char ** argv)
 {
@@ -47,6 +48,8 @@ int main(int argc,char ** argv)
     // tree.print_node();
     // tree.insert(60,"60");
 
+    std::map<std::string,std::string> m;
+    m.erase("1");
 
     return 0;
 }
