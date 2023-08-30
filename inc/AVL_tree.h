@@ -12,7 +12,7 @@ public:
     ~AVL_tree_node() = default;
     AVL_tree_node(AVL_tree_node&) = default;
     AVL_tree_node(AVL_tree_node&&) = default;
-    AVL_tree_node(K key,V value)
+    AVL_tree_node(const K& key,const V& value)
         :m_key(key)
         ,m_value(value){}
 
@@ -20,6 +20,7 @@ public:
     K m_key;
     V m_value;
     int m_bf{0};
+    int height{1};
     AVL_tree_node<K,V>* m_parent_node{nullptr};
     AVL_tree_node<K,V>* m_left_node{nullptr};
     AVL_tree_node<K,V>* m_right_node{nullptr};
@@ -34,128 +35,90 @@ public:
     AVL_tree(AVL_tree&&) = default;
     ~AVL_tree() = default;
 
-    bool insert(Key key,Value value);
+    void insert(const Key& key,const Value& value);
+    AVL_tree_node<Key,Value> * insert_recursive(AVL_tree_node<Key,Value> * node,const Key& key,const Value& value);
     int erase(Key key);
-    void Rotate_R(AVL_tree_node<Key,Value>*& node);
-    void Rotate_L(AVL_tree_node<Key,Value>*& node);
-    void Rotate_RL(AVL_tree_node<Key,Value>*& node);
-    void Rotate_LR(AVL_tree_node<Key,Value>*& node);
+    AVL_tree_node<Key,Value>* Rotate_R(AVL_tree_node<Key,Value>* node);
+    AVL_tree_node<Key,Value>* Rotate_L(AVL_tree_node<Key,Value>* node);
     void print_node();
     void print_node_(AVL_tree_node<Key,Value>* node);
     void level_print();
     void level_print_(std::queue<AVL_tree_node<Key,Value>*>& que);
+
+    int get_height(AVL_tree_node<Key,Value> * node);
+    void update_height(AVL_tree_node<Key,Value> * node);
+    void update_balance_factor(AVL_tree_node<Key,Value> * node);
 
 private:
     AVL_tree_node<Key,Value>* m_root_node{nullptr};
 };
 
 template<class Key,class Value>
-bool AVL_tree<Key,Value>::insert(Key key,Value value)
+void AVL_tree<Key,Value>::insert(const Key& key,const Value& value)
 {
-    if(m_root_node == nullptr)
+    m_root_node = insert_recursive(m_root_node,key,value);
+}
+
+template<class Key,class Value>
+AVL_tree_node<Key,Value> * AVL_tree<Key,Value>::insert_recursive(AVL_tree_node<Key,Value> * node,const Key& key,const Value& value)
+{
+    //如果节点为nullptr，创建并返回
+    if(node == nullptr)
     {
-        m_root_node = new AVL_tree_node<Key,Value>();
-        m_root_node->m_key = key;
-        m_root_node->m_value = value;
-        return true;
+        return new AVL_tree_node<Key,Value>(key,value);
     }
-
-    if(m_root_node->m_key == key)
+    
+    if(node->m_key > key)
     {
-        return false;
+        node->m_left_node = insert_recursive(node->m_left_node,key,value);
+        node->m_left_node->m_parent_node = node;
     }
-
-    AVL_tree_node<Key,Value> * parent = nullptr;
-    AVL_tree_node<Key,Value> * cur = m_root_node;
-
-    while(cur)
+    else if(node->m_key < key)
     {
-        parent = cur;
-        if(cur->m_key == key)
-        {
-            return false;
-        }
-        else if(cur->m_key > key)
-        {
-            cur = cur->m_left_node;
-            continue;
-        }
-        else
-        {
-            cur = cur->m_right_node;
-            continue;
-        }
-    }
-
-    cur = new AVL_tree_node<Key,Value>(key,value);
-    cur->m_parent_node = parent;
-    if(parent->m_key > key)
-    {
-        parent->m_left_node = cur;
+        node->m_right_node = insert_recursive(node->m_right_node,key,value);
+        node->m_right_node->m_parent_node = node;
     }
     else
     {
-        parent->m_right_node = cur;
+        node->m_value = value;
+        return node;
     }
 
-    while(parent)
+    update_height(node);
+    update_balance_factor(node);
+
+    if(node->m_bf < -1)
     {
-        if(parent->m_left_node == cur)
+        if(key < node->m_left_node->m_key)
         {
-            parent->m_bf--;
+            node = Rotate_R(node);
         }
         else
         {
-            parent->m_bf++;
-        }
-
-        if(parent->m_bf == 0)
-        {
-            break;
-        }
-        else if(parent->m_bf == -1 || parent->m_bf == 1)
-        {
-            cur = parent;
-            parent = cur->m_parent_node;
-        }
-        else
-        {
-            if(parent->m_bf == 2)
-            {
-                if(cur->m_bf == 1)
-                {
-                    // std::cout<<"key:"<<key<<" L"<<std::endl;
-                    Rotate_L(parent);
-                }
-                else
-                {
-                    // std::cout<<"key:"<<key<<" RL"<<std::endl;
-                    Rotate_RL(parent);
-                }
-            }
-            else if(parent->m_bf == -2)
-            {
-                if(cur->m_bf == -1)
-                {
-                    // std::cout<<"key:"<<key<<" R"<<std::endl;
-                    Rotate_R(parent);
-                }
-                else
-                {
-                    // std::cout<<"key:"<<key<<" LR"<<std::endl;
-                    Rotate_LR(parent);
-                }
-            }
-            break;
+            node->m_left_node = Rotate_L(node->m_left_node);
+            node = Rotate_R(node);
         }
     }
+    
+    if(node->m_bf > 1)
+    {
+        if(key > node->m_right_node->m_key)
+        {
+            node = Rotate_L(node);
+        }
+        else
+        {
+            node->m_right_node = Rotate_R(node->m_right_node);
+            node = Rotate_L(node);
+        }
+    }
+
+    return node;
 }
 
 template<class Key,class Value>
 int AVL_tree<Key,Value>::erase(Key key)
 {
-    int erase_count = 0;
-
     AVL_tree_node<Key,Value> * node = m_root_node;
     AVL_tree_node<Key,Value> * parent = nullptr;
 
@@ -179,32 +142,58 @@ int AVL_tree<Key,Value>::erase(Key key)
 
     if(node == nullptr)
     {
-        return erase_count;
+        return 0;
     }
 
-    AVL_tree_node<Key,Value> * sub_LP = sub_L->m_parent;
     AVL_tree_node<Key,Value> * sub_L = node->m_left_node;
+    AVL_tree_node<Key,Value> * sub_LP = nullptr;
 
     while(sub_L)
     {
         if(sub_L->m_right_node)
         {
+            sub_LP = sub_L;
             sub_L = sub_L->m_right_node;
+        }
+        else
+        {
+            break;
         }
     }
 
+    //节点没有左子树，右节点代替节点。包括只有root节点的情况
     if(sub_L == nullptr)
     {
-        sub_L = node->m_right_node;
+        AVL_tree_node<Key,Value> * sub_R = node->m_right_node;
+        if(parent == nullptr)
+        {
+            m_root_node = sub_R;
+        }
+        else if(parent->m_left_node == node)
+        {
+            parent->m_left_node = sub_R;
+        }
+        else
+        {
+            parent->m_right_node = sub_R;
+        }
+        if(sub_R)
+        {
+            sub_R->m_parent_node = parent;
+        }
+        delete node;
+        return 1;
     }
 
-    if(parent == nullptr)
+    //节点的左子树没有右节点，左节点代替节点
+    if(sub_LP == nullptr)
     {
-        m_root_node = sub_L;
-    }
-    else
-    {
-        if(parent->m_left_node == node)
+        AVL_tree_node<Key,Value> * sub_R = node->m_right_node;
+        if(parent == nullptr)
+        {
+            m_root_node = sub_L;
+        }
+        else if(parent->m_left_node == node)
         {
             parent->m_left_node = sub_L;
         }
@@ -212,29 +201,76 @@ int AVL_tree<Key,Value>::erase(Key key)
         {
             parent->m_right_node = sub_L;
         }
+
+        sub_L->m_parent_node = parent;
+        sub_L->m_right_node = sub_R;
+
+        if(sub_R)
+        {
+            sub_R->m_parent_node = sub_L;
+        }
+
+        sub_L->m_bf = 0;
+        if(sub_L->m_left_node)
+        {
+            sub_L->m_bf -= 1;
+        }
+        if(sub_R)
+        {
+            sub_L->m_bf += 1;
+        }
+
+        delete node;
+        return 1;
     }
 
-    sub_LP->m_right_node == sub_L->m_left_node;
+    if(parent == nullptr)
+    {
+        m_root_node = sub_L;
+    }
+    else if(parent->m_left_node == node)
+    {
+        parent->m_left_node = sub_L;
+    }
+    else
+    {
+        parent->m_right_node = sub_L;
+    }
+
+    sub_LP->m_right_node = sub_L->m_left_node;
+    
     if(sub_LP->m_right_node == nullptr)
     {
         sub_LP->m_bf -= 1;
     }
     
-    sub_L->m_parent = parent;
+    sub_L->m_parent_node = parent;
     sub_L->m_right_node = node->m_right_node;
     sub_L->m_left_node = node->m_left_node;
+    
+    sub_L->m_bf = node->m_bf;
+    if(sub_LP->m_bf == -2)
+    {
+        if(sub_LP->m_left_node->m_bf == 1)
+        {
+            Rotate_LR(sub_LP);
+        }
+        else
+        {
+            Rotate_R(sub_LP);
+        }
+    }
 
+    delete node;
+    return 1;
 }
 
 template<class Key,class Value>
-void AVL_tree<Key,Value>::Rotate_R(AVL_tree_node<Key,Value>*& node)
+AVL_tree_node<Key,Value>* AVL_tree<Key,Value>::Rotate_R(AVL_tree_node<Key,Value>* node)
 {
     AVL_tree_node<Key,Value> * parent = node->m_parent_node;
     AVL_tree_node<Key,Value> * sub_L = node->m_left_node;
     AVL_tree_node<Key,Value> * sub_LR = sub_L->m_right_node;
-
-    node->m_bf = 0;
-    sub_L->m_bf = 0;
 
     sub_L->m_parent_node = parent;
     sub_L->m_right_node = node;
@@ -247,11 +283,7 @@ void AVL_tree<Key,Value>::Rotate_R(AVL_tree_node<Key,Value>*& node)
     node->m_parent_node = sub_L;
     node->m_left_node = sub_LR;
 
-    if(parent == nullptr)
-    {
-        m_root_node = sub_L;
-    }
-    else
+    if(parent)
     {
         if(parent->m_left_node == node)
         {
@@ -263,18 +295,21 @@ void AVL_tree<Key,Value>::Rotate_R(AVL_tree_node<Key,Value>*& node)
         }
     }
 
-    // node = sub_L;
+    update_height(node);
+    update_height(sub_L);
+
+    update_balance_factor(sub_L);
+    update_balance_factor(node);
+
+    return sub_L;
 }
 
 template<class Key,class Value>
-void AVL_tree<Key,Value>::Rotate_L(AVL_tree_node<Key,Value>*& node)
+AVL_tree_node<Key,Value>* AVL_tree<Key,Value>::Rotate_L(AVL_tree_node<Key,Value>* node)
 {
     AVL_tree_node<Key,Value> * parent = node->m_parent_node;
     AVL_tree_node<Key,Value> * sub_R = node->m_right_node;
     AVL_tree_node<Key,Value> * sub_RL = sub_R->m_left_node;
-
-    node->m_bf = 0;
-    sub_R->m_bf = 0;
     
     sub_R->m_parent_node = parent;
     sub_R->m_left_node = node;
@@ -287,11 +322,7 @@ void AVL_tree<Key,Value>::Rotate_L(AVL_tree_node<Key,Value>*& node)
     node->m_parent_node = sub_R;
     node->m_right_node = sub_RL;
 
-    if(parent == nullptr)
-    {
-        m_root_node = sub_R;
-    }
-    else
+    if(parent)
     {
         if(parent->m_left_node == node)
         {
@@ -303,63 +334,13 @@ void AVL_tree<Key,Value>::Rotate_L(AVL_tree_node<Key,Value>*& node)
         }
     }
 
-    // node = sub_R;
-}
+    update_height(node);
+    update_height(sub_R);
 
-template<class Key,class Value>
-void AVL_tree<Key,Value>::Rotate_RL(AVL_tree_node<Key,Value>*& node)
-{
-    AVL_tree_node<Key,Value> * parent = node;
-    AVL_tree_node<Key,Value> * node_right = node->m_right_node;
-    AVL_tree_node<Key,Value> * node_right_left = node_right->m_left_node;
-    int bf = node_right_left->m_bf;
+    update_balance_factor(sub_R);
+    update_balance_factor(node);
 
-    Rotate_R(node->m_right_node);
-    Rotate_L(node);
-
-    if(bf == -1)
-    {
-        parent->m_bf = 0;
-        node_right->m_bf = 1;
-    }
-    else if(bf == 1)
-    {
-        parent->m_bf = -1;
-        node_right->m_bf = 0;
-    }
-    else
-    {
-        parent->m_bf = 0;
-        node_right->m_bf = 0;
-    }
-}
-
-template<class Key,class Value>
-void AVL_tree<Key,Value>::Rotate_LR(AVL_tree_node<Key,Value>*& node)
-{
-    AVL_tree_node<Key,Value> * parent = node;
-    AVL_tree_node<Key,Value> * node_left = node->m_left_node;
-    AVL_tree_node<Key,Value> * node_left_right = node_left->m_right_node;
-    int bf = node_left_right->m_bf;
-
-    Rotate_L(node->m_left_node);
-    Rotate_R(node);
-
-    if(bf == -1)
-    {
-        parent->m_bf = 1;
-        node_left->m_bf = 0;
-    }
-    else if(bf == 1)
-    {
-        parent->m_bf = 0;
-        node_left->m_bf = -1;
-    }
-    else
-    {
-        parent->m_bf = 0;
-        node_left->m_bf = 0;
-    }
+    return sub_R;
 }
 
 template<class Key,class Value>
@@ -377,7 +358,7 @@ void AVL_tree<Key,Value>::print_node_(AVL_tree_node<Key,Value>* node)
         return;
     }
     print_node_(node->m_left_node);
-    std::cout<< node->m_key << " bf = " << node->m_bf  <<std::endl;
+    std::cout<< node->m_key << " height = " << node->height  <<std::endl;
     print_node_(node->m_right_node);
 }
 
@@ -416,6 +397,37 @@ void AVL_tree<Key,Value>::level_print_(std::queue<AVL_tree_node<Key,Value>*>& qu
     }
     std::cout<<std::endl;
     return;
+}
+
+template<class Key,class Value>
+int AVL_tree<Key,Value>::get_height(AVL_tree_node<Key,Value> * node)
+{
+    if(node == nullptr)
+    {
+        return 0;
+    }
+
+    return node->height;
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::update_height(AVL_tree_node<Key,Value> * node)
+{
+    if(node == nullptr)
+    {
+        return;
+    }
+    node->height = 1 + std::max(get_height(node->m_left_node),get_height(node->m_right_node));
+}
+
+template<class Key,class Value>
+void AVL_tree<Key,Value>::update_balance_factor(AVL_tree_node<Key,Value> * node)
+{
+    if(node == nullptr)
+    {
+        return;
+    }
+    node->m_bf = get_height(node->m_right_node) - get_height(node->m_left_node);
 }
 
 #endif
