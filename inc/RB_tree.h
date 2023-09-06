@@ -395,7 +395,7 @@ RB_tree_node<Key,Value> * RB_tree<Key,Value>::erase_and_rebalance(RB_tree_node<K
         {
             m_root_node = y;
         }
-        else if(node->m_parent->m_left = node)
+        else if(node->m_parent->m_left == node)
         {
             node->m_parent->m_left = y;
         }
@@ -412,7 +412,6 @@ RB_tree_node<Key,Value> * RB_tree<Key,Value>::erase_and_rebalance(RB_tree_node<K
     else
     {
         //此时替换节点为x
-
         x_parent = y->m_parent;
         if(x != nullptr)
         {
@@ -439,18 +438,27 @@ RB_tree_node<Key,Value> * RB_tree<Key,Value>::erase_and_rebalance(RB_tree_node<K
     //为黑意味着此子树黑节点数量-1，需要调整
     if(y->m_color == COLOR::BLACK)
     {
+        //当待删除节点左右子节点都不为空时，x为替换节点的右子节点
+        //当待删除节点左右子节点不全时，x为替换节点
+        //x为空的情况有 1.待删除节点左右子节点皆为空 少一个黑色节点 2.替换节点的左右子节点为空，此情况下y父节点下y侧少了一个黑色节点
+        //x若为黑，x只可能是待删除节点的右子节点,此时待删除节点左右节点都存在
         while(x != m_root_node && (x == nullptr || x->m_color == COLOR::BLACK))
         {
+            //情况1.待删除节点左右子节点都为空
+            //情况2.待删除节点左右节点都存在，右子节点的右子节点为空
             if(x == x_parent->m_left)
             {
                 RB_tree_node<Key,Value> * w = x_parent->m_right;
-                if(w->m_color == COLOR::RED)
+
+                //叔叔节点为红色
+                if(w->m_color == COLOR::RED)   
                 {
                     w->m_color = COLOR::BLACK;
                     x_parent->m_color = COLOR::RED;
                     rotate_L(x_parent);
                     w = x_parent->m_right;
                 }
+                //叔叔节点的左右子节点都为空，或都为黑色节点
                 if((w->m_left == nullptr || w->m_left->m_color == COLOR::BLACK)
                     &&(w->m_right == nullptr || w->m_right->m_color == COLOR::BLACK))
                 {
@@ -520,6 +528,8 @@ RB_tree_node<Key,Value> * RB_tree<Key,Value>::erase_and_rebalance(RB_tree_node<K
                 }
             }
         }
+        
+        //情况1.待删除节点左右子节点不全，此时子节点只能为红色，直接变黑即可平衡
         if(x != nullptr)
         {
             x->m_color = COLOR::BLACK;
